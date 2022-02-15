@@ -10,4 +10,6 @@ Two example architectures are presented. The first is setup is based on a centra
 
 The second setup based on a centralised control plane with a centralised data plane reduces the total required IPv4 addresses space but does require more sophisticated firewall devices that have a leg in both private and public subnets and can perform network address translation.
 
+Whichever deployment option is chosen the key advantage that this architectural pattern brings to the table is that because GWLB functions as a transparent proxy no additional configuration is needed as is the case when deploying with expicit proxies. From a ROSA perspective everything looks like it is layer-3 based routing;  the only special configuration required is configure each subnet routing tables to point the default route (0.0.0.0/0) to a corresponding GWLB endpoint.
+
 
