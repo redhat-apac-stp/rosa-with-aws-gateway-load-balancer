@@ -10,7 +10,7 @@ One method that is not so well-known, and which does not rely on proxies, is to 
 
 From an architectural pattern there are two options for integrating ROSA with AWS Gateway Load Balancer (GWLB) that this article will examine. The first pattern leverages a centralised control plane with a distributed data plane and the second leverages a centralised control with data plane.
 
-The first architectural pattern is shown in the following diagram. To aid visual simplicity not all components deployed by ROSA are shown. It is assumed that ROSA will be deployed in a customer-managed VPC in private subnets as this is a common approach for customers that already have a Landing Zone defined.
+The first architectural pattern is shown in the following diagram. To aid visual simplicity not all components deployed by ROSA are shown. It is assumed that ROSA will be deployed in a customer-managed VPC in private subnets which is a common approach for customers adopting a Landing Zone construct.
 
 <img src=https://github.com/redhat-apac-stp/rosa-with-aws-gateway-load-balancer/blob/main/ROSA%20-%20AWS%20Gateway%20Load%20Balancer%20-%20A.png>
 
