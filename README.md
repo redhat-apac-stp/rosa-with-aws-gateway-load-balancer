@@ -18,7 +18,9 @@ The control plane is composed of a central GWLB and a scaleable fleet of inline 
 
 The main defining feature of this architectural pattern is that all Internet-bound traffic is hairpinned through the control plane and requires an additional public subnet in the VPC hosting the private ROSA cluster for routing to the Internet Gateway. The advantage of this design is that allows for bring-your-own static public IP addresses to be configured on the Internet Gateway that third-party systems to which ROSA needs to communicate may rely upon.
 
-If this is not a requirement or the third-party system is willing to allow a more dynamic address space then the more flexible second architectural pattern can be considered. In this scenario traffic from ROSA and all other VPCs egress to the Internet via a shared Internet Gateway. The advantage is that no additional public subnet and Internet Gateway needs to be created.
+If this is not a requirement or the third-party system is willing to allow a more dynamic address space then a more flexible second architectural pattern can be considered as shown in the following diagram. In this scenario traffic from ROSA and all other VPCs egress to the Internet via a shared Internet Gateway. The advantage is that no additional public subnet and Internet Gateway needs to be created.
+
+https://github.com/redhat-apac-stp/rosa-with-aws-gateway-load-balancer/blob/main/ROSA%20-%20AWS%20Gateway%20Load%20Balancer%20-%20B.png
 
 For both architectural patterns what makes the solution non-intrusive and work seamlessly is that it only requires for the default route (0.0.0.0/0) in the subnet hosting the ROSA cluster to point to a Gateway Load Balancer endpoint in the same availability zone. Assuming that the adjoining Security VPC has been correctly setup no further configuration is required on the ROSA cluster to make this work.
 
