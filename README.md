@@ -10,7 +10,7 @@ One method that is not so well-known, and which does not rely on proxies, is to 
 
 From an architectural pattern there are two options for integrating ROSA with AWS Gateway Load Balancer (GWLB) that this article will examine. The first pattern leverages a centralised control plane with a distributed data plane and the second leverages a centralised control and data plane.
 
-The first architectural pattern is shown in the following diagram.
+The first architectural pattern is shown in the following diagram. To maintain visual simplicity not all components deployed are shown.
 
 The control plane is composed of a central GWLB and a scaleable fleet of inline firewall appliances that implement allowed egress paths. For ROSA these are defined in the following link: https://docs.openshift.com/rosa/rosa_getting_started/rosa-aws-prereqs.html#osd-aws-privatelink-firewall-prerequisites. The main defining feature of this architectural pattern is that all Internet-bound traffic is hairpinned through the control plane and requires an additional public subnet to be created in the VPC hosting the private ROSA cluster. The advantage of this design is that if static public IP addresses are configured for the Internet Gateway then any third-party system can define explicit firewall rules for allowing traffic originating from the ROSA cluster to support data-sensitive exchanges.
 
