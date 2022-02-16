@@ -12,20 +12,13 @@ From an architectural pattern there are two options for integrating ROSA with AW
 
 The first architectural pattern is shown in the following diagram.
 
-The control plane is composed of the GWLB and a scaleable fleet of inline firewall appliances that implement allowed egress paths. For ROSA these are defined in the following link: https://docs.openshift.com/rosa/rosa_getting_started/rosa-aws-prereqs.html#osd-aws-privatelink-firewall-prerequisites. The main defining feature of this architectural pattern is that all Internet-bound traffic is hairpinned through the control plane and requires an additional public subnet to be created in the VPC hosting the private ROSA cluster. The advantage of this design is that if static public IP addresses are configured for the Internet Gateway then any third-party receiver can define explicit firewall rules targeting traffic originating from the ROSA cluster to support data-sensitive exchanges
+The control plane is composed of a central GWLB and a scaleable fleet of inline firewall appliances that implement allowed egress paths. For ROSA these are defined in the following link: https://docs.openshift.com/rosa/rosa_getting_started/rosa-aws-prereqs.html#osd-aws-privatelink-firewall-prerequisites. The main defining feature of this architectural pattern is that all Internet-bound traffic is hairpinned through the control plane and requires an additional public subnet to be created in the VPC hosting the private ROSA cluster. The advantage of this design is that if static public IP addresses are configured for the Internet Gateway then any third-party system can define explicit firewall rules for allowing traffic originating from the ROSA cluster to support data-sensitive exchanges.
+
+If this is not a requirement or the third-party system is willing to allow a more dynamic address space then the second architectural pattern can be considered. In this scenario traffic from ROSA and all other VPCs egress to the Internet via a shared Internet Gateway. The advantage is that no additional public subnet needs to be created in the VPC hosting ROSA.
+
+For both architectural patterns what makes the solution non-intrusive and work seamlessly is that it only requires for the default route (0.0.0.0/0) in the subnet hosting the ROSA cluster to point to Gateway Load Balancer endpoint in the corresponding availability zone. Assuming that the adjoining Security VPC has been correctly setup no further configuration is required on the ROSA cluster to make this work. Note that configuring subnet route tables is only supported when ROSA is deployed in a customer-managed VPC.
 
 
 
-a price-point    A critical aspect for any ROSA deployment is connectivity to the Internet for the purpose of downloading image files for OpenShift core and operators required to install the cluster. Without a functioning egress path for routing traffic to public Red Hat image registries this quickly becomes a barrier to any installation, especially as ROSA does not support a disconnected installation method.
-
-Thus the network architecture enabling Internet egress becomes a critical design point and should typically be defined as part of an overall Landing Zone Architecture or similar construct.
-
-ROSA supports various Internet egress options including those based on well-known approaches such as NAT Gateways and Transit Gateways. The one that may not be so well-known is the still relatively new AWS Gateway Load Balancer which operates as a "bump-in-the-wire" in which Internet-bound traffic is transparently proxied across a fleet of firewall appliances for inspection prior to exiting the AWS cloud via an Internet Gateway.
-
-Two example architectures are presented. The first is setup is based on a centralised control plane with a distributed data plane. In this setup egress traffic is "hairpinned" through the firewall appliances which at all times remain hidden from the world inside a private subnet. The downside is that each client VPC leveraging this centralised control plane will need to setup it's own public subnet and Internet Gateway which can become a limiting factor in terms of consumption of IPv4 address space.
-
-The second setup based on a centralised control plane with a centralised data plane reduces the total required IPv4 addresses space but does require more sophisticated firewall devices that have a leg in both private and public subnets and can perform network address translation.
-
-Whichever deployment option is chosen the key advantage that this architectural pattern brings to the table is that because GWLB functions as a transparent proxy no additional configuration is needed as is the case when deploying with expicit proxies. From a ROSA perspective everything looks like it is layer-3 based routing;  the only special configuration required is configure each subnet routing tables to point the default route (0.0.0.0/0) to a corresponding GWLB endpoint.
 
 
