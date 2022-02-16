@@ -12,7 +12,7 @@ From an architectural pattern there are two options for integrating ROSA with AW
 
 The first architectural pattern is shown in the following diagram. To aid visual simplicity not all components deployed by ROSA are shown. It is assumed that ROSA will be deployed in a customer-managed VPC in private subnets as this is a common approach for customers that already have a Landing Zone defined.
 
-https://github.com/redhat-apac-stp/rosa-with-aws-gateway-load-balancer/blob/main/ROSA%20-%20AWS%20Gateway%20Load%20Balancer%20-%20A.png
+<img src=https://github.com/redhat-apac-stp/rosa-with-aws-gateway-load-balancer/blob/main/ROSA%20-%20AWS%20Gateway%20Load%20Balancer%20-%20A.png>
 
 The control plane is composed of a central GWLB and a scaleable fleet of inline firewall appliances that allow egress traffic originating from ROSA as defined by the following link: https://docs.openshift.com/rosa/rosa_getting_started/rosa-aws-prereqs.html#osd-aws-privatelink-firewall-prerequisites. 
 
@@ -20,7 +20,7 @@ The main defining feature of this architectural pattern is that all Internet-bou
 
 If this is not a requirement or the third-party system is willing to allow a more dynamic address space then a more flexible second architectural pattern can be considered as shown in the following diagram. In this scenario traffic from ROSA and all other VPCs egress to the Internet via a shared Internet Gateway. The advantage is that no additional public subnet and Internet Gateway needs to be created.
 
-https://github.com/redhat-apac-stp/rosa-with-aws-gateway-load-balancer/blob/main/ROSA%20-%20AWS%20Gateway%20Load%20Balancer%20-%20B.png
+<img src=https://github.com/redhat-apac-stp/rosa-with-aws-gateway-load-balancer/blob/main/ROSA%20-%20AWS%20Gateway%20Load%20Balancer%20-%20B.png>
 
 For both architectural patterns what makes the solution non-intrusive and work seamlessly is that it only requires for the default route (0.0.0.0/0) in the subnet hosting the ROSA cluster to point to a Gateway Load Balancer endpoint in the same availability zone. Assuming that the adjoining Security VPC has been correctly setup no further configuration is required on the ROSA cluster to make this work.
 
