@@ -20,5 +20,5 @@ For both architectural patterns what makes the solution non-intrusive and work s
 
 ## Conclusion
 
-Deploying ROSA in conjunction with GWLB offers frictionless secure access to the Internet with a compelling price-point when compared to other AWS solutions such as NAT Gateway and Transit Gateway.
+Deploying ROSA in conjunction with GWLB offers frictionless secure access to the Internet with a compelling price-point to boot when compared to other AWS offerings such as NAT Gateway and Transit Gateway.
 
