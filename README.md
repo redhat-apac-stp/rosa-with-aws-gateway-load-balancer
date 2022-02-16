@@ -18,7 +18,7 @@ If this is not a requirement or the third-party system is willing to allow a mor
 
 For both architectural patterns what makes the solution non-intrusive and work seamlessly is that it only requires for the default route (0.0.0.0/0) in the subnet hosting the ROSA cluster to point to Gateway Load Balancer endpoint in the corresponding availability zone. Assuming that the adjoining Security VPC has been correctly setup no further configuration is required on the ROSA cluster to make this work. Note that configuring subnet route tables is only supported when ROSA is deployed in a customer-managed VPC.
 
+## Conclusion
 
-
-
+Deploying ROSA in conjunction with GWLB offers frictionless secure access to the Internet with a compelling price-point when compared to other AWS solutions such as NAT Gateway and Transit Gateway.
 
