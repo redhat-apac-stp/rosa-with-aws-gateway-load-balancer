@@ -2,7 +2,7 @@
 
 This article will outline a solution for deploying a managed Red Hat OpenShift Service on AWS (ROSA) by applying a secure approach to gain frictionless access to the public Internet using AWS Gateway Load Balancer without the complexities associated with traditional proxy-based solutions.
 
-ROSA requires access to publically hosted Red Hat image repositories in order to download core components and operators that form the basis of the OpenShift platform. Thus solving the problem of how to efficiently and securely route egress traffic to the Internet in adherence with corporate compliance policies typically involves the introduction of a firewall in the service chain.
+ROSA requires access to publically hosted Red Hat image registries in order to download core platform components and operators that form the basis of any OpenShift installation. Thus solving the problem of how to efficiently and securely route egress traffic to the Internet in adherence with corporate compliance policies typically involves the introduction of a firewall into the service chain.
 
 There are several well-known approaches to solving this problem such as using NAT or Transit Gateways in conjunction with proxies that are documented in the official ROSA documentation which can be found here: https://docs.openshift.com/rosa/welcome/index.html
 
