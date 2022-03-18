@@ -1,0 +1,410 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >-
+  AWS CloudFormation template for a Rosa VPC in a single-AZ with Gateway Load Balancer.
+  
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Network Configuration
+        Parameters:
+          - VpcCidr
+          - AvailabilityZone
+          - RosaSubnetCidr
+          - GwlbeSubnetCidr
+          - NatgwSubnetCidr
+      - Label:
+          default: Bastion Configuration
+        Parameters:
+          - CreateBastionCondition
+          - BastionInstanceType
+          - BastionInstanceAmiId
+          - BastionInstanceDiskSize
+          - KeyPairName
+          - AccessLocation
+      - Label:
+          default: Gateway Load Balancer Endpoint Configuration
+        Parameters:
+          - ServiceName
+
+    ParameterLabels:
+      VpcCidr:
+        default: Rosa VPC - Network CIDR for VPC   
+      AvailabilityZone:
+        default: Rosa VPC - Availability Zone
+      RosaSubnetCidr:
+        default: Rosa VPC - Rosa Subnet CIDR
+      GwlbeSubnetCidr:
+        default: Rosa VPC - GWLB Endpoint Subnet CIDR
+      NatgwSubnetCidr:
+        default: Rosa VPC - NAT GW Subnet CIDR
+      BastionInstanceType:
+        default: Bastion Instance Type
+      BastionInstanceAmiId:
+        default: Latest AMI ID for Bastion (ec2 instance)
+      BastionInstanceDiskSize:
+        default: Bastion instance Size in GB
+      KeyPairName:
+        default: KeyPair required for accessing Bastion instance
+      AccessLocation:
+        default: Network CIDR to access Bastion instance
+      CreateBastionCondition:
+        default: Create Bastion Setup Condition
+      ServiceName:
+        default: The name of the endpoint service to create gateway load balancer endpoint for
+
+Parameters:
+  VpcCidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    Default: 10.0.0.0/16
+    Description: Rosa VPC - CIDR block for the VPC
+    Type: String
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/y
+  AvailabilityZone:
+    Description: Rosa VPC - Availability Zone
+    Type: AWS::EC2::AvailabilityZone::Name
+    ConstraintDescription: Valid Availability Zone Id
+  RosaSubnetCidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    Default: 10.0.1.0/24
+    Description: Rosa VPC - Rosa Subnet CIDR
+    Type: String
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+  GwlbeSubnetCidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    Default: 10.0.2.0/24
+    Description: Rosa VPC - Rosa Subnet CIDR
+    Type: String
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28
+  NatgwSubnetCidr:
+    AllowedPattern: "^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])(\\/(1[6-9]|2[0-8]))$"
+    Default: 10.0.3.0/24
+    Description: Rosa VPC - NAT GW Subnet CIDR
+    Type: String
+    ConstraintDescription: CIDR block parameter must be in the form x.x.x.x/16-28    
+  BastionInstanceType:
+    Description: Select EC2 instance type for Rosa instance. Default is set to t2.micro
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+    Type: String
+  BastionInstanceAmiId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: '/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2'
+  BastionInstanceDiskSize:
+    Description: Rosa instance disk size in GB. Default is set to 8GB
+    Default: 8
+    AllowedValues: [8]
+    Type: Number
+    ConstraintDescription: Should be a valid instance size in GB
+  KeyPairName:
+    Description: EC2 KeyPair required for accessing EC2 instance
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 KeyPair
+  AccessLocation:
+    Description: >-
+      Enter desired Network CIDR to allow traffic to appliance. Default is set to
+      access from anywhere and it is not recommended
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    MinLength: "9"
+    MaxLength: "18"
+    Default: 0.0.0.0/0
+    Type: String
+    ConstraintDescription: Must be a valid Network CIDR of the form x.x.x.x/y
+  CreateBastionCondition:
+    Description: >-
+      Do you want to create bastion setup? If yes, template creates bastion
+      host and bastion security group
+    Default: "Yes"
+    AllowedValues: ["Yes", "No"]
+    Type: String
+    ConstraintDescription: Must be a valid Yes or No option
+  ServiceName:
+    Description: >-
+      Enter the name of the service for which you want to create gateway load balancer endpoint.
+      Example service name: com.amazonaws.vpce.us-west-2.vpce-svc-0a76331bc5d6cc4cd
+    Type: String
+    ConstraintDescription: Must be a valid service name
+
+Conditions:
+  CreateBastion: !Equals
+    - !Ref CreateBastionCondition
+    - "Yes"
+
+Resources:
+
+# Create VPC, IGW and associate IGW with VPC:
+
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsSupport: "true"
+      EnableDnsHostnames: "true"
+      InstanceTenancy: default
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - !Ref AWS::StackName
+              - "-vpc"
+  
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - !Ref AWS::StackName
+              - "-igw"
+  
+  AttachInternetGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+# Create Subnets:
+
+  RosaSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone
+      CidrBlock: !Ref RosaSubnetCidr
+      VpcId: !Ref Vpc
+      MapPublicIpOnLaunch: "false"
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - !Ref AWS::StackName
+              - "-subnet"
+
+  GwlbeSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone
+      CidrBlock: !Ref GwlbeSubnetCidr
+      VpcId: !Ref Vpc
+      MapPublicIpOnLaunch: "true"
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - !Ref AWS::StackName
+              - "-gwlbe-subnet"
+
+  NatgwSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: !Ref AvailabilityZone
+      CidrBlock: !Ref NatgwSubnetCidr
+      VpcId: !Ref Vpc
+      MapPublicIpOnLaunch: "true"
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - !Ref AWS::StackName
+              - "-natgw-subnet"
+  
+# Create NAT Gateways:
+
+  Eip1:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  Natgw:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt
+        - Eip1
+        - AllocationId
+      SubnetId: !Ref NatgwSubnet
+      Tags:
+      - Key: Name
+        Value: !Join
+          - ""
+          - - !Ref AWS::StackName
+            - "-natgw"
+
+# Create Route Tables: 
+
+  RosaRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - !Ref AWS::StackName
+              - "-rosa-rtb"
+
+  GwlbeRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - !Ref AWS::StackName
+              - "-gwlbe-rtb"
+
+  NatGwRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref Vpc
+      Tags:
+        - Key: Name
+          Value: !Join
+            - ""
+            - - !Ref AWS::StackName
+              - "-natgw-rtb"
+
+# Associate Subnets with appropriate Route Tables:
+
+  RosaSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref RosaSubnet
+      RouteTableId: !Ref RosaRouteTable
+  
+  GwlbeSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref GwlbeSubnet
+      RouteTableId: !Ref GwlbeRouteTable
+
+  NatgwSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref NatgwSubnet
+      RouteTableId: !Ref NatGwRouteTable
+
+# Create Security Group:
+
+  BastionSg:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      VpcId: !Ref Vpc
+      GroupName: !Sub "${AWS::StackName}-bastion-sg"
+      GroupDescription: >-
+        Access to bastion instance: allow SSH and ICMP access from appropriate location.
+        Allow all traffic from VPC CIDR
+      SecurityGroupIngress:
+        - CidrIp: !Ref AccessLocation
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+        - CidrIp: !Ref AccessLocation
+          IpProtocol: ICMP
+          FromPort: -1
+          ToPort: -1
+        - CidrIp: !Ref VpcCidr
+          IpProtocol: "-1"
+          FromPort: -1
+          ToPort: -1          
+      SecurityGroupEgress:
+        - CidrIp: 0.0.0.0/0
+          IpProtocol: "-1"
+          FromPort: -1
+          ToPort: -1
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-bastion-sg"
+
+# Create Bastion Host:
+
+  BastionHost:
+    DependsOn: NatgwRtbIgwRoute
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref BastionInstanceAmiId
+      KeyName: !Ref KeyPairName
+      InstanceType: !Ref BastionInstanceType
+      SecurityGroupIds:
+        - !Ref BastionSg
+      SubnetId: !Ref NatgwSubnet
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !Ref BastionInstanceDiskSize
+      Tags:
+        - Key: Name
+          Value: !Sub "${AWS::StackName}-bastion-host"
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash -ex
+
+          # Install packages:
+          yum update -y;
+
+          # Configure hostname:
+          hostnamectl set-hostname ${AWS::StackName}-bastion-host;
+
+          # Configure SSH client alive interval for ssh session timeout:
+          echo 'ClientAliveInterval 60' | sudo tee --append /etc/ssh/sshd_config;
+          service sshd restart;
+          
+          # Set dark background for vim:
+          touch /home/ec2-user/.vimrc;
+          echo "set background=dark" >> /home/ec2-user/.vimrc;
+
+# Create Gateway Load Balancer Endpoint:
+
+  GwlbVpcEndpoint:
+    Type: AWS::EC2::VPCEndpoint
+    Properties:
+      VpcId: !Ref Vpc
+      ServiceName: !Ref ServiceName
+      VpcEndpointType: GatewayLoadBalancer
+      SubnetIds:
+        - !Ref GwlbeSubnet
+
+# Create appropriate routes for appropriate route tables.
+
+  NatgwRtbIgwRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachInternetGateway
+    Properties:
+      DestinationCidrBlock: !Ref AccessLocation
+      GatewayId: !Ref InternetGateway
+      RouteTableId: !Ref NatGwRouteTable
+
+  GwlbeRtbNatgwRoute:
+    Type: AWS::EC2::Route
+    DependsOn: Natgw
+    Properties:
+      DestinationCidrBlock: !Ref AccessLocation
+      NatGatewayId: !Ref Natgw
+      RouteTableId: !Ref GwlbeRouteTable
+  
+  RosaRtbGwlbeRoute:
+    Type: AWS::EC2::Route
+    DependsOn: GwlbVpcEndpoint
+    Properties:
+      DestinationCidrBlock: !Ref AccessLocation
+      VpcEndpointId: !Ref GwlbVpcEndpoint
+      RouteTableId: !Ref RosaRouteTable
+
+Outputs:
+  RosaVpcCidr:
+    Description: Rosa VPC CIDR
+    Value: !Ref VpcCidr
+  RosaVpcId:
+    Description: Rosa VPC ID
+    Value: !Ref Vpc
+  RosaBastionHostPublicIp:
+    Description: Rosa VPC Bastion Instance Public IP
+    Value: !GetAtt BastionHost.PublicIp
+  RosaSubnetId:
+    Description: Rosa VPC RosaSubnet ID
+    Value: !Ref RosaSubnet
+  GwlbeRtbId:
+    Description: Rosa VPC gwlb-rtb's id
+    Value: !Ref GwlbeRouteTable
